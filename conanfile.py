@@ -12,8 +12,6 @@ class App2(ConanFile):
            "url": "https://github.com/conan-ci-cd-training/App2.git",
            "revision": "auto"}
 
-    exports_sources = "LICENSE" # to avoid build info bug
-
     def requirements(self):
         self.requires("libC/1.0@mycompany/stable")
 
