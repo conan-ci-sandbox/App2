@@ -9,7 +9,7 @@ class App2(ConanFile):
     generators = "cmake"
 
     scm = {"type": "git",
-           "url": "https://github.com/conan-ci-cd-training/App2.git",
+           "url": "/git_server/App2.git",
            "revision": "auto"}
 
     def requirements(self):
