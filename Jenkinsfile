@@ -60,9 +60,9 @@ def get_stages(profile, docker_image, user_channel, config_url, conan_develop_re
                                 stash name: 'full_reference', includes: 'search_output.json'
                             }
 
-                            if (branch_name =~ ".*PR.*" || env.BRANCH_NAME == "develop") {                     
+                            if (env.BRANCH_NAME == "develop") {                     
                                 stage("Upload package") {
-                                    sh "conan upload '*' --all -r ${conan_tmp_repo} --confirm  --force"
+                                    sh "conan upload '*' --all -r ${conan_develop_repo} --confirm"
                                 }
                                 if (create_build_info) {
                                     stage("Create build info") {
@@ -108,7 +108,7 @@ pipeline {
                     }
 
                     if (create_build_info) {
-                        if (branch_name =~ ".*PR.*" || env.BRANCH_NAME == "develop") {
+                        if (env.BRANCH_NAME == "develop") {
                             docker.image("conanio/gcc6").inside("--net=host") {
                                 def last_info = ""
                                 build_result.each { profile, buildInfo ->
@@ -125,33 +125,6 @@ pipeline {
                             }
                         }
                     }                    
-                }
-            }
-        }
-
-        // maybe just doing publishes an uploads if we are releasing something
-        // or doing a commit to develop?
-        // maybe if a new tag was created with the name release?
-        stage("Trigger products pipeline") {
-            agent any
-            steps {
-                script {
-                    if (branch_name =~ ".*PR.*" || env.BRANCH_NAME == "develop") {
-                        unstash 'full_reference'
-                        def props = readJSON file: "search_output.json"
-                        reference_revision = props[0]['revision']
-                        assert reference_revision != null
-                        def reference = "${name}/${version}@${user_channel}#${reference_revision}"
-                        def scmVars = checkout scm
-                        build(job: "../products/master", propagate: true, parameters: [
-                            [$class: 'StringParameterValue', name: 'reference', value: reference],
-                            [$class: 'StringParameterValue', name: 'organization', value: organization],
-                            [$class: 'StringParameterValue', name: 'build_name', value: env.JOB_NAME],
-                            [$class: 'StringParameterValue', name: 'build_number', value: env.BUILD_NUMBER],
-                            [$class: 'StringParameterValue', name: 'commit_number', value: scmVars.GIT_COMMIT],
-                            [$class: 'StringParameterValue', name: 'library_branch', value: env.BRANCH_NAME],
-                        ]) 
-                    }
                 }
             }
         }
