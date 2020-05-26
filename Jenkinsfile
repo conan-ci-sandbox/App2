@@ -1,11 +1,10 @@
-def organization = "conan-ci-cd-training"
-def user_channel = "mycompany/stable"
-def config_url = "https://github.com/conan-ci-cd-training/settings.git"
-def conan_develop_repo = "conan-develop"
-def conan_tmp_repo = "conan-tmp"
-def artifactory_metadata_repo = "conan-metadata"
+user_channel = "mycompany/stable"
+config_url = "https://github.com/conan-ci-cd-training/settings.git"
+conan_develop_repo = "conan-develop"
+conan_tmp_repo = "conan-tmp"
+artifactory_metadata_repo = "conan-metadata"
 
-def artifactory_url = (env.ARTIFACTORY_URL != null) ? "${env.ARTIFACTORY_URL}" : "jfrog.local"
+artifactory_url = (env.ARTIFACTORY_URL != null) ? "${env.ARTIFACTORY_URL}" : "jfrog.local"
 
 String reference_revision = null
 
@@ -14,11 +13,11 @@ def profiles = [
   "release-gcc6": "conanio/gcc6"	
 ]
 
-def create_build_info = false
+create_build_info = false
 
 def build_result = [:]
 
-def get_stages(profile, docker_image, user_channel, config_url, conan_develop_repo, conan_tmp_repo, artifactory_metadata_repo, artifactory_url, create_build_info) {
+def get_stages(profile, docker_image) {
     return {
         stage(profile) {
             node {
@@ -103,7 +102,7 @@ pipeline {
                     echo("${currentBuild.fullProjectName.tokenize('/')[0]}")
                     build_result = withEnv(["CONAN_HOOK_ERROR_LEVEL=40"]) {
                         parallel profiles.collectEntries { profile, docker_image ->
-                            ["${profile}": get_stages(profile, docker_image, user_channel, config_url, conan_develop_repo, conan_tmp_repo, artifactory_metadata_repo, artifactory_url, create_build_info)]
+                            ["${profile}": get_stages(profile, docker_image)]
                         }
                     }
 
