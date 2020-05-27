@@ -63,6 +63,8 @@ def get_stages(profile, docker_image) {
                             } 
                             stage("Upload lockfile") {
                                 if (env.BRANCH_NAME == "develop") {
+                                    def name = sh (script: "conan inspect . --raw name", returnStdout: true).trim()
+                                    def version = sh (script: "conan inspect . --raw version", returnStdout: true).trim()                                
                                     def lockfile_url = "http://${artifactory_url}:8081/artifactory/${artifactory_metadata_repo}/${env.JOB_NAME}/${env.BUILD_NUMBER}/${name}/${version}@${user_channel}/${profile}/conan.lock"
                                     withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', usernameVariable: 'ARTIFACTORY_USER', passwordVariable: 'ARTIFACTORY_PASSWORD')]) {
                                         sh "curl --user \"\${ARTIFACTORY_USER}\":\"\${ARTIFACTORY_PASSWORD}\" -X PUT ${lockfile_url} -T ${lockfile}"
