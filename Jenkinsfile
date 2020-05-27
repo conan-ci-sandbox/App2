@@ -6,8 +6,6 @@ artifactory_metadata_repo = "conan-metadata"
 
 artifactory_url = (env.ARTIFACTORY_URL != null) ? "${env.ARTIFACTORY_URL}" : "jfrog.local"
 
-String reference_revision = null
-
 def profiles = [
   "debug-gcc6": "conanio/gcc6",	
   "release-gcc6": "conanio/gcc6"	
@@ -48,15 +46,6 @@ def get_stages(profile, docker_image) {
                                 sh "cat ${lockfile}"
                                 sh "conan create . ${user_channel} --profile ${profile} --lockfile=${lockfile} -r ${conan_develop_repo} --ignore-dirty"
                                 sh "cat ${lockfile}"
-                            }
-
-                            stage("Get current package revision") {       
-                                name = sh (script: "conan inspect . --raw name", returnStdout: true).trim()
-                                version = sh (script: "conan inspect . --raw version", returnStdout: true).trim()                                
-                                def search_output = "search_output.json"
-                                sh "conan search ${name}/${version}@${user_channel} --revisions --raw --json=${search_output}"
-                                sh "cat ${search_output}"
-                                stash name: 'full_reference', includes: 'search_output.json'
                             }
 
                             if (env.BRANCH_NAME == "develop") {                     
