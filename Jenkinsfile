@@ -29,6 +29,7 @@ def get_stages(profile, docker_image) {
                                     sh "conan user -p ${ARTIFACTORY_PASSWORD} -r ${conan_develop_repo} ${ARTIFACTORY_USER}"
                                     sh "conan user -p ${ARTIFACTORY_PASSWORD} -r ${conan_tmp_repo} ${ARTIFACTORY_USER}"
                                 }
+                                sh "conan remote list"
                             }
 
                            stage("Create package") {                                
