@@ -1,2 +1,2 @@
-conan-ci-cd-training :: App2
+conan-ci-sandbox :: App2
 ============================

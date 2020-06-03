@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(conan-ci-cd-training)
+project(conan-ci-sandbox)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
