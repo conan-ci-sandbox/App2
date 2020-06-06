@@ -31,11 +31,20 @@ def get_stages(profile, docker_image) {
                                 }
                             }
 
-                           stage("Create package") {                                
-                                sh "conan graph lock . --profile ${profile} --lockfile=${lockfile} -r ${conan_develop_repo}"
-                                sh "cat ${lockfile}"
-                                sh "conan create . ${user_channel} --profile ${profile} --lockfile=${lockfile} -r ${conan_develop_repo} --ignore-dirty"
-                                sh "cat ${lockfile}"
+                            stage("Create package") {       
+                                if (lockfile_contents==null) {
+                                    sh "conan graph lock . --profile ${profile} --lockfile=${lockfile} -r ${conan_develop_repo}"
+                                    sh "cat ${lockfile}"
+                                    sh "conan create . ${user_channel} --profile ${profile} --lockfile=${lockfile} -r ${conan_develop_repo} --ignore-dirty"
+                                    sh "cat ${lockfile}"
+                                }                         
+                                else {
+                                    writeFile file: "${profile}.lock", text: "${lockfile_contents}"
+                                    sh "cat ${profile}.lock"
+                                    sh "cp ${profile}.lock conan.lock"
+                                    sh "conan install libA/1.0@mycompany/stable --build libA --lockfile conan.lock"
+                                    sh "cat conan.lock"
+                                }
                             }
 
                             if (env.BRANCH_NAME == "develop") {                     
@@ -75,12 +84,19 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    echo("${currentBuild.fullProjectName.tokenize('/')[0]}")
-                    withEnv(["CONAN_HOOK_ERROR_LEVEL=40"]) {
-                        parallel profiles.collectEntries { profile, docker_image ->
-                            ["${profile}": get_stages(profile, docker_image)]
+                    if (params.size()>0) {
+                        parallel params.collectEntries { profile_name, lockfile ->
+                            echo "${profile_name}"
+                            echo "${lockfile}"
+                            def docker_image = profiles[profile_name]
+                            ["${profile_name}": get_stages(profile_name, docker_image, lockfile)]
                         }
-                    }                 
+                    }
+                    else {
+                        parallel profiles.collectEntries { profile, docker_image ->
+                            ["${profile}": get_stages(profile, docker_image, null)]
+                        }
+                    }
                 }
             }
         }
