@@ -49,9 +49,6 @@ def get_stages(profile, docker_image) {
                                     sh "cat ${lockfile_name}"
                                     sh "conan create . ${user_channel} --lockfile ${lockfile_name} --ignore-dirty"
                                     sh "cat ${lockfile_name}"
-                                    archiveArtifacts artifacts: lockfile_name, onlyIfSuccessful: true
-                                    echo "archiveArtifacts: ${lockfile_name}"
-                                    sh "cp ${lockfile_name} ${lockfile}"
                                 }
                             }
 
@@ -67,20 +64,18 @@ def get_stages(profile, docker_image) {
                                 }
                             } 
 
-                            if (env.BRANCH_NAME == "develop") {
-                                name = sh (script: "conan inspect . --raw name", returnStdout: true).trim()
-                                version = sh (script: "conan inspect . --raw version", returnStdout: true).trim()                                
+                            name = sh (script: "conan inspect . --raw name", returnStdout: true).trim()
+                            version = sh (script: "conan inspect . --raw version", returnStdout: true).trim()                                
 
-                                def lockfile_path = "/${artifactory_metadata_repo}/${env.JOB_NAME}/${env.BUILD_NUMBER}/${name}/${version}@${user_channel}/${profile}"
-                                def base_url = "http://${artifactory_url}:8081/artifactory"
-                                def properties = "?properties=build.name=${env.JOB_NAME}%7Cbuild.number=${env.BUILD_NUMBER}%7Cprofile=${profile}%7Cname=${name}%7Cversion=${version}"
-                                withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', usernameVariable: 'ARTIFACTORY_USER', passwordVariable: 'ARTIFACTORY_PASSWORD')]) {
-                                    // upload the lockfile
-                                    sh "curl --user \"\${ARTIFACTORY_USER}\":\"\${ARTIFACTORY_PASSWORD}\" -X PUT ${base_url}${lockfile_path} -T ${lockfile}"
-                                    // set properties in Artifactory for the file
-                                    sh "curl --user \"\${ARTIFACTORY_USER}\":\"\${ARTIFACTORY_PASSWORD}\" -X PUT ${base_url}/api/storage${lockfile_path}${properties}"
-                                }                                
-                            }
+                            def lockfile_path = "/${artifactory_metadata_repo}/${env.JOB_NAME}/${env.BUILD_NUMBER}/${name}/${version}@${user_channel}/${profile}"
+                            def base_url = "http://${artifactory_url}:8081/artifactory"
+                            def properties = "?properties=build.name=${env.JOB_NAME}%7Cbuild.number=${env.BUILD_NUMBER}%7Cprofile=${profile}%7Cname=${name}%7Cversion=${version}"
+                            withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', usernameVariable: 'ARTIFACTORY_USER', passwordVariable: 'ARTIFACTORY_PASSWORD')]) {
+                                // upload the lockfile
+                                sh "curl --user \"\${ARTIFACTORY_USER}\":\"\${ARTIFACTORY_PASSWORD}\" -X PUT ${base_url}${lockfile_path} -T ${lockfile}"
+                                // set properties in Artifactory for the file
+                                sh "curl --user \"\${ARTIFACTORY_USER}\":\"\${ARTIFACTORY_PASSWORD}\" -X PUT ${base_url}/api/storage${lockfile_path}${properties}"
+                            }                                
                         }
                         finally {
                             deleteDir()
