@@ -24,27 +24,40 @@ def get_stages(profile, docker_image) {
                                 sh "conan --version"
                                 sh "conan config install ${config_url}"
                                 withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', usernameVariable: 'ARTIFACTORY_USER', passwordVariable: 'ARTIFACTORY_PASSWORD')]) {
-                                    sh "conan remote add ${conan_develop_repo} http://${artifactory_url}:8081/artifactory/api/conan/${conan_develop_repo}" // the namme of the repo is the same that the arttifactory key
                                     sh "conan user -p ${ARTIFACTORY_PASSWORD} -r ${conan_develop_repo} ${ARTIFACTORY_USER}"
-                                    sh "conan remote add ${conan_tmp_repo} http://${artifactory_url}:8081/artifactory/api/conan/${conan_tmp_repo}" // the namme of the repo is the same that the arttifactory key
                                     sh "conan user -p ${ARTIFACTORY_PASSWORD} -r ${conan_tmp_repo} ${ARTIFACTORY_USER}"
                                 }
                             }
 
-                            stage("Create package") {       
-                                if (lockfile_contents==null) {
+                            stage("Get package info") {       
+                                name = sh (script: "conan inspect . --raw name", returnStdout: true).trim()
+                                version = sh (script: "conan inspect . --raw version", returnStdout: true).trim()                                
+                            }
+
+                            if (lockfile_contents==null) {
+                                stage("Create package") {       
                                     sh "conan graph lock . --profile ${profile} --lockfile=${lockfile} -r ${conan_develop_repo}"
                                     sh "cat ${lockfile}"
                                     sh "conan create . ${user_channel} --profile ${profile} --lockfile=${lockfile} -r ${conan_develop_repo} --ignore-dirty"
                                     sh "cat ${lockfile}"
-                                }                         
-                                else {
-                                    writeFile file: "${profile}.lock", text: "${lockfile_contents}"
-                                    sh "cat ${profile}.lock"
-                                    sh "cp ${profile}.lock conan.lock"
-                                    sh "conan install libA/1.0@mycompany/stable --build libA --lockfile conan.lock"
-                                    sh "cat conan.lock"
                                 }
+                            }                         
+                            else {
+                                stage("Create package using lockfile") {       
+                                    def lockfile_name = "${name}-${profile}.lock"
+                                    writeFile file: lockfile_name, text: "${lockfile_contents}"
+                                    sh "cat ${lockfile_name}"
+                                    sh "conan create . ${user_channel} --lockfile ${lockfile_name}"
+                                    sh "cat ${lockfile_name}"
+                                    stash name: lockfile_name, includes: lockfile_name 
+                                    echo "stashing: ${lockfile_name}"
+                                }
+                            }
+
+                            stage("Get created package revision") {       
+                                search_out = sh (script: "conan search ${name}/${version}@${user_channel} --revisions --raw", returnStdout: true).trim()    
+                                reference_revision = search_out.split(" ")[0]
+                                echo "${reference_revision}"
                             }
 
                             if (env.BRANCH_NAME == "develop") {                     
