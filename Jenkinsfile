@@ -11,7 +11,7 @@ def profiles = [
   "release-gcc6": "conanio/gcc6"	
 ]
 
-def get_stages(profile, docker_image) {
+def get_stages(profile, docker_image, lockfile_contents) {
     return {
         stage(profile) {
             node {
