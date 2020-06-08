@@ -49,6 +49,7 @@ def get_stages(profile, docker_image, lockfile_contents) {
                                     sh "cat ${lockfile_name}"
                                     sh "conan create . ${user_channel} --lockfile ${lockfile_name} --ignore-dirty"
                                     sh "cat ${lockfile_name}"
+                                    sh "cp ${lockfile_name} ${lockfile}"
                                 }
                             }
 
@@ -63,9 +64,6 @@ def get_stages(profile, docker_image, lockfile_contents) {
                                     sh "conan upload '*' --all -r ${conan_develop_repo} --confirm"
                                 }
                             } 
-
-                            name = sh (script: "conan inspect . --raw name", returnStdout: true).trim()
-                            version = sh (script: "conan inspect . --raw version", returnStdout: true).trim()                                
 
                             def lockfile_path = "/${artifactory_metadata_repo}/${env.JOB_NAME}/${env.BUILD_NUMBER}/${name}/${version}@${user_channel}/${profile}"
                             def base_url = "http://${artifactory_url}:8081/artifactory"
